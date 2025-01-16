@@ -2,7 +2,8 @@
 #include <cmath>
 #include <tuple>
 #include <algorithm>
-#include <concepts> // If needed for std::convertible_to<bool>
+#include <concepts> 
+#include <cassert> 
 
 //--------------------------------------------------------------------------------------
 /*
@@ -40,7 +41,7 @@ namespace et
   struct terminal 
   {
     // Faite en sorte que terminal vÃ©rifie le concept expr
-    /* ???? */ 
+    /* ???? */
     static constexpr bool is_expr = true;
 
     std::ostream& print(std::ostream& os) const
@@ -54,6 +55,7 @@ namespace et
     constexpr auto operator()(Args&&... args) const
     {
       // Construit un tuple de tout les args et renvoit le ID-eme via std::get
+      // Veillez Ã  bien repsecter le fait que args est une reference universelle
       /* ???? */
       auto t = std::forward_as_tuple(args...);
       return std::get<ID>(t);
@@ -62,7 +64,7 @@ namespace et
 
   // Generateur de variable numÃ©rotÃ©e
   template<int ID>
-  inline constexpr auto arg = terminal<ID>{};
+  inline constexpr auto arg =  terminal<ID>{};
 
   // Variables _0, _1 et _2 sont prÃ©dÃ©finies
   inline constexpr auto _0  = arg<0>;
@@ -72,9 +74,9 @@ namespace et
   //---------------------------------------------------------------------------------------
   /*
     Le deuxieme Ã©lÃ©ment  d'un systeme d'EXPRESSION TEMPLATE est la classe de noeud. 
-    Un NODE reprÃ©sente un opÃ©rateur ou une fonction dans l'ARBRE DE SYNTAXE. 
+    Un NODE reprÃ©sente un opÃ©ratuer ou une fonction dans l'ARBRE DE SYNTAXE. 
 
-    Il est dÃ©fini par le type de l'OPERATION effectuÃ©e au passage du noeud et d'une
+    Il est dÃ©finit par le type de l'OPERATION effectuÃ©e au passage du noeud et d'une
     liste variadique de ses sous-nodes.
 
     Q3 ComplÃ©tez l'implÃ©mentation de la structure template node ci dessous en suivant les demandes
@@ -84,30 +86,30 @@ namespace et
   struct node
   {
     // Faite en sorte que node vÃ©rifie le concept expr
-    /* ???? */ 
+    /* ???? */
     static constexpr bool is_expr = true;
 
     // Construisez un node Ã  partir d'une instance de Op et d'une liste variadique de Children
     // Ce constructeur sera constexpr
-    /* ???? */ 
+    /* ???? */
     constexpr node(Op op_, Children... c)
       : op(op_), children(c...)
     {}
 
-    // L'operateur() de node permet d'Ã©valuer le sous arbre courant de maniÃ¨re 
+    // L'operateur() de node permet d'avaluer le sous arbre courant de maniÃ¨re 
     // rÃ©cursive. Les paramÃ¨tres args... reprÃ©sentent dans l'ordre les valeurs des
     // variables contenus dans le sous arbre.
-    // Par exemple, le node {op_add, terminal<1>, terminal<0>} appelant operator()(4, 9)
+    // Par exemple, le node {op_add, terminal<1>, termnal<0>} appelant operator()(4, 9)
     // doit renvoyer op_add(9, 4);
+    // Renseignez vous sur std::apply pour vous simplifier la vie
+    // Pensez qu'un node contient potentiellement d'autre node.
     template<typename... Args>
     constexpr auto operator()(Args&&... args) const
     {
-      /* ???? */ 
+      /* ???? */
       return std::apply(
         [&](auto const&... child)
         {
-          // Evaluate each child with (args...) -> child(args...)
-          // Then feed them into op(...)
           return op(child(args...)...);
         },
         children
@@ -117,16 +119,10 @@ namespace et
     // Affiche un node en demandant Ã  Op d'afficher les sous arbres
     std::ostream& print(std::ostream& os) const
     {
-      /*
-        The key fix:
-        - Instead of returning op.print(...) directly from the lambda,
-          we do the printing inside the lambda (which returns void),
-          then we return `os` after std::apply is done.
-      */
+      /* ???? */
       std::apply(
         [&](auto const&... child)
         {
-          // print sub-nodes with op
           op.print(os, child...);
         },
         children
@@ -136,9 +132,9 @@ namespace et
     
     // Op est stockÃ© par valeur
     // les Children... sont stockÃ©es dans un tuple
-    /* ???? */ 
+    /* ???? */  
     Op op;
-    /* ???? */ 
+    /* ???? */
     std::tuple<Children...> children;
   };
 
@@ -158,7 +154,6 @@ namespace et
 
     std::ostream& print(std::ostream& os, auto a, auto b) const
     {
-      // This returns std::ostream&, which is fine
       return os << a << " + " << b ;
     }
   };
@@ -174,7 +169,7 @@ namespace et
     Q4. Sur le modÃ¨le de add_, implÃ©mentez 
       - mul_ et un operator* pour la multiplication
       - abs_ et une fonction abs pour le calcul de la valeur absolue
-      - fma_ et une fonction fma(a,b,c) qui calcule a*b+c
+      - fma_ et une fonction fma(a,b,c) qui calcul a*b+c
   */
 
   // mul_
@@ -250,10 +245,12 @@ namespace et
 
 int main()
 {
-  // Q5. Le mini exemple ci dessous doit fonctionner. 
+  // Q5. Le mini exemple ci dessous doit fonctionner. ComplÃ©tez le avec une sÃ©rie de tests
+  // exhaustif de tout les cas qui vous paraissent nÃ©cessaire.
   constexpr auto f = et::fma(et::_1, et::abs(et::_2), et::_0);
 
   f.print(std::cout) << "\n";
+
   std::cout << "f(1,2,3) = " << f(1,2,3) << "\n\n";
 
   // Tests addition
@@ -275,6 +272,20 @@ int main()
   constexpr auto combo = (et::_0 + et::_1) * et::abs(et::_2);
   std::cout << "Expression combo : " << combo << "\n";
   std::cout << "combo(1,-2,-3) = " << combo(1,-2,-3) << "\n\n";
+
+  // ----------------------------------------------------------------------------
+  //                  Additional tests with asserts
+  // ----------------------------------------------------------------------------
+  {
+    assert(f(1,2,3) == 7);
+    assert(add_expr(3,4) == 7);
+    assert(mul_expr(2,3,4) == 12);
+    assert(abs_expr(-5) == 5);
+    assert(combo(1, -2, -3) == -3);
+  }
+
+  // If we get here, all asserts passed:
+  std::cout << "\033[1;32mAll assert tests passed successfully!\033[0m\n";
 
   return 0;
 }
