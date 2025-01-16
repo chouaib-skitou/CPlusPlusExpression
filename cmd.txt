@@ -1,0 +1,2 @@
+g++ -std=c++20 -o expr_tree_part1 expr_tree_part1.cpp; .\expr_tree_part1.exe
+g++ -std=c++20 -o expr_tree_part2 expr_tree_part2.cpp; .\expr_tree_part2.exe

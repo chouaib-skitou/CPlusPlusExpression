@@ -242,12 +242,12 @@ namespace et
   }
 
 } // namespace et
-
+using et::abs;
 int main()
 {
   // Q5. Le mini exemple ci dessous doit fonctionner. ComplÃ©tez le avec une sÃ©rie de tests
   // exhaustif de tout les cas qui vous paraissent nÃ©cessaire.
-  constexpr auto f = et::fma(et::_1, et::abs(et::_2), et::_0);
+  constexpr auto f = et::fma(et::_1, abs(et::_2), et::_0);
 
   f.print(std::cout) << "\n";
 
